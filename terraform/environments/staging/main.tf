@@ -22,7 +22,7 @@ module "platform" {
   single_nat_gateway = true
 
   # --- EKS: SPOT + smaller footprint to keep the bill down ---
-  cluster_version     = "1.34"
+  cluster_version     = "1.33"
   node_instance_types = ["t3.large"]
   node_capacity_type  = "SPOT"
   node_min_size       = 2

@@ -37,8 +37,10 @@ module "eks" {
     }
   }
 
+  # Amazon Linux 2023. The older AL2 EKS AMIs are only published up to Kubernetes
+  # 1.32, so AL2023 is required from 1.33 onward.
   eks_managed_node_group_defaults = {
-    ami_type = "AL2_x86_64"
+    ami_type = "AL2023_x86_64_STANDARD"
   }
 
   eks_managed_node_groups = {
