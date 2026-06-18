@@ -19,10 +19,10 @@ postgres:
   port: 5432
   existingSecret: postgres-credentials
 
-# OpenTelemetry. Left empty until Phase 5 points it at the OTel Collector; the
-# app treats an empty endpoint as "tracing disabled".
+# OpenTelemetry. Points at the Phase 5 OpenTelemetry Collector over OTLP gRPC.
+# Set endpoint back to "" to disable tracing; the app treats empty as off.
 otel:
-  endpoint: ""
+  endpoint: "otel-collector.tracing.svc.cluster.local:4317"
   serviceName: backend
 
 env:
