@@ -48,7 +48,7 @@ variable "single_nat_gateway" {
 variable "cluster_version" {
   description = "Kubernetes control-plane version."
   type        = string
-  default     = "1.29"
+  default     = "1.34"
 }
 
 variable "cluster_endpoint_public_access" {
@@ -76,18 +76,18 @@ variable "node_capacity_type" {
 }
 
 variable "node_min_size" {
-  type        = number
-  default     = 2
+  type    = number
+  default = 2
 }
 
 variable "node_max_size" {
-  type        = number
-  default     = 5
+  type    = number
+  default = 5
 }
 
 variable "node_desired_size" {
-  type        = number
-  default     = 3
+  type    = number
+  default = 3
 }
 
 # -----------------------------------------------------------------------------

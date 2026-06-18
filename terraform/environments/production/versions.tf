@@ -20,9 +20,7 @@ terraform {
     }
   }
 
-  # ---------------------------------------------------------------------------
-  # Remote state. Create the bucket + DynamoDB table ONCE before `init`, or
-  # comment this block out for a local-state first run. See backend.tf.example.
-  # ---------------------------------------------------------------------------
+  # Remote state lives PER ENVIRONMENT — staging and production must never share
+  # a state file. Copy backend.tf.example -> backend.tf and `init -migrate-state`.
   # backend "s3" {}
 }

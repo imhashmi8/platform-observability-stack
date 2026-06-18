@@ -1,0 +1,16 @@
+# Per-environment remote state. Rename to backend.tf and run
+# `terraform init -migrate-state`. The KEY is what isolates production from
+# staging — they share the bucket + lock table but never the state file.
+#
+# (Bucket + lock table are created once; see staging/backend.tf.example for the
+# one-time bootstrap commands.)
+
+terraform {
+  backend "s3" {
+    bucket         = "my-platform-obs-tfstate"
+    key            = "platform-observability-stack/production/terraform.tfstate"
+    region         = "ap-south-1"
+    dynamodb_table = "platform-obs-tflock"
+    encrypt        = true
+  }
+}

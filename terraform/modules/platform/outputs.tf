@@ -13,6 +13,12 @@ output "cluster_endpoint" {
   value       = module.eks.cluster_endpoint
 }
 
+output "cluster_certificate_authority_data" {
+  description = "Base64 CA cert for the API server — used to configure the kubernetes/helm providers."
+  value       = module.eks.cluster_certificate_authority_data
+  sensitive   = true
+}
+
 output "cluster_version" {
   description = "Running Kubernetes control-plane version."
   value       = module.eks.cluster_version
