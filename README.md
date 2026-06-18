@@ -29,7 +29,7 @@ engineering, built around a real sample application.
 | 1 | Platform foundation: EKS via Terraform (VPC, EKS, node groups, IRSA, Route53), reusable module + staging/production envs | ✅ done | `terraform/` |
 | 2 | Sample app + GitOps (Helm + ArgoCD app-of-apps) | ✅ done | `app/`, `helm/`, `argocd/`, see [docs/PHASE2.md](docs/PHASE2.md) |
 | 3 | Metrics: Prometheus, kube-state-metrics, node-exporter, custom app metrics | ✅ done | `prometheus/`, `argocd/apps/` see [docs/PHASE3.md](docs/PHASE3.md) |
-| 4 | Logging: Loki + Promtail | ⬜ todo | `loki/` |
+| 4 | Logging: Loki + Promtail | ✅ done | `loki/`, `grafana/datasources/` see [docs/PHASE4.md](docs/PHASE4.md) |
 | 5 | Distributed tracing: Tempo + OpenTelemetry Collector | ⬜ todo | `tempo/`, `otel/` |
 | 6 | SLI / SLO dashboards | ⬜ todo | `slo/` |
 | 7 | Error budgets | ⬜ todo | `slo/` |
