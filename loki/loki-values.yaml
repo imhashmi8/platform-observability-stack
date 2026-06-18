@@ -1,0 +1,80 @@
+# Values for the grafana/loki chart (Phase 4).
+# Runs Loki in SingleBinary mode with filesystem storage on a persistent volume.
+# This is the simplest topology that still uses real persistence. For production
+# you would switch to SimpleScalable or Distributed with an S3 bucket (via IRSA
+# from Phase 1) instead of the local filesystem.
+
+deploymentMode: SingleBinary
+
+loki:
+  # Single tenant. Disables the requirement for an X-Scope-OrgID header so Grafana
+  # can query without extra configuration.
+  auth_enabled: false
+
+  commonConfig:
+    # One replica, so no data is replicated across instances.
+    replication_factor: 1
+
+  # tsdb + filesystem. schemaConfig must be set explicitly or the chart refuses
+  # to start.
+  schemaConfig:
+    configs:
+      - from: "2024-04-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: loki_index_
+          period: 24h
+
+  storage:
+    type: filesystem
+
+  limits_config:
+    retention_period: 168h
+    reject_old_samples: true
+    reject_old_samples_max_age: 168h
+
+  # Bound disk growth: the compactor deletes data past the retention period.
+  compactor:
+    retention_enabled: true
+    delete_request_store: filesystem
+
+# The single Loki process. Everything reads and writes through here.
+singleBinary:
+  replicas: 1
+  persistence:
+    enabled: true
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+# Zero out the scalable topology components so only singleBinary runs.
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
+
+# The memcached caches default on and request several GB of memory each, which
+# is far too heavy for a single binary demo. Turn them off.
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+
+# Self-test and canary workloads are not needed here.
+test:
+  enabled: false
+lokiCanary:
+  enabled: false
+
+# nginx gateway gives one stable endpoint for both push (Promtail) and query
+# (Grafana). Service name becomes loki-gateway in the release namespace.
+gateway:
+  enabled: true

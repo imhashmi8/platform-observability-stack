@@ -1,0 +1,29 @@
+# Values for the grafana/promtail chart (Phase 4).
+# Promtail runs as a DaemonSet, tails every pod's logs from the node, attaches
+# Kubernetes metadata as labels, and pushes to Loki. The chart ships sensible
+# default scrape configs for pod discovery, so the main thing to set is where to
+# send the logs.
+
+config:
+  clients:
+    - url: http://loki-gateway.logging.svc.cluster.local/loki/api/v1/push
+
+  # Keep label cardinality sane. Namespace, app, pod and container are enough to
+  # find application logs (for example the sample-app backend) and ingress
+  # controller logs, without exploding the index.
+  snippets:
+    pipelineStages:
+      - cri: {}
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 128Mi
+
+# Run on every node, including control-plane style taints if any user nodes carry
+# them. The default tolerations already cover standard node taints.
+tolerations:
+  - effect: NoSchedule
+    operator: Exists
