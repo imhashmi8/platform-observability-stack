@@ -1,0 +1,39 @@
+# Phase 3 metrics stack: Prometheus, Alertmanager, Grafana, node-exporter and
+# kube-state-metrics, installed from the prometheus-community Helm repo with our
+# values file pulled from this git repo (multi source app).
+#
+# sync wave "-5" puts it ahead of the sample app (waves 0 to 2) so the
+# ServiceMonitor CRD exists before the backend chart creates its ServiceMonitor.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: 86.2.3
+      helm:
+        valueFiles:
+          - $values/prometheus/values.yaml
+    - repoURL: https://github.com/OWNER/platform-observability-stack.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # The Prometheus CRDs are too large for the client side apply annotation,
+      # so server side apply is required for this chart.
+      - ServerSideApply=true

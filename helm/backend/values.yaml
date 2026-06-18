@@ -42,14 +42,13 @@ autoscaling:
   maxReplicas: 6
   targetCPUUtilizationPercentage: 70
 
-# Prometheus scraping. The ServiceMonitor requires the Prometheus Operator CRD,
-# which Phase 3 installs — keep disabled until then. podAnnotations provide a
-# fallback for a plain Prometheus scrape-config in the meantime.
+# Prometheus scraping. The ServiceMonitor needs the Prometheus Operator CRD,
+# installed by Phase 3 (kube-prometheus-stack), so it is enabled now.
 metrics:
   port: 8000
   path: /metrics
   serviceMonitor:
-    enabled: false
+    enabled: true
     interval: 15s
 
 podAnnotations:

@@ -1,0 +1,122 @@
+# Values for the kube-prometheus-stack chart (Phase 3).
+# This bundle installs the Prometheus Operator, Prometheus, Alertmanager,
+# Grafana, node-exporter and kube-state-metrics in one release. Later phases
+# reuse the same Grafana and Alertmanager.
+
+fullnameOverride: kube-prometheus-stack
+
+# -----------------------------------------------------------------------------
+# EKS specifics.
+# The managed control plane does not expose these components for scraping, so
+# leaving them on just produces permanently "down" targets. Turn them off.
+# -----------------------------------------------------------------------------
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+# -----------------------------------------------------------------------------
+# Prometheus
+# -----------------------------------------------------------------------------
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    retentionSize: 18GB
+
+    # Pick up every ServiceMonitor, PodMonitor and PrometheusRule in the cluster,
+    # not only the ones carrying this release's labels. This is what lets the
+    # backend ServiceMonitor (and the SLO rules added in Phase 6) be discovered.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+    podMonitorNamespaceSelector: {}
+    ruleNamespaceSelector: {}
+
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        memory: 2Gi
+
+    # Persistent storage backed by the EBS CSI driver from Phase 1. An empty
+    # storageClassName uses the cluster default class.
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 20Gi
+
+# -----------------------------------------------------------------------------
+# Alertmanager. Kept minimal here. Phase 8 adds the burn rate routes and the
+# Slack receiver.
+# -----------------------------------------------------------------------------
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi
+
+# -----------------------------------------------------------------------------
+# Grafana. This is the single Grafana the whole platform uses. Phase 4 and 5
+# add the Loki and Tempo data sources to it.
+# -----------------------------------------------------------------------------
+grafana:
+  enabled: true
+
+  # Dev default only. For anything real, set admin.existingSecret to a Secret you
+  # manage out of band rather than committing a password.
+  adminPassword: "changeme-grafana-dev"
+
+  persistence:
+    enabled: true
+    size: 5Gi
+
+  defaultDashboardsEnabled: true
+
+  # The sidecar watches for ConfigMaps labelled grafana_dashboard / grafana_datasource
+  # so later phases can ship dashboards and data sources as plain ConfigMaps.
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: ALL
+    datasources:
+      enabled: true
+      searchNamespace: ALL
+
+  service:
+    type: ClusterIP
+
+# -----------------------------------------------------------------------------
+# Cluster level exporters. Both on by default; listed for clarity.
+# -----------------------------------------------------------------------------
+nodeExporter:
+  enabled: true
+kubeStateMetrics:
+  enabled: true
+
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi

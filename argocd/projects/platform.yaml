@@ -12,21 +12,27 @@ metadata:
 spec:
   description: Sample application + observability stack for platform-observability-stack.
 
-  # Only this repo. Update to your fork's URL (also referenced by every Application).
+  # Your fork (referenced by every Application) plus the Helm repos the
+  # observability charts are pulled from. Update the github URL to your fork.
   sourceRepos:
     - https://github.com/OWNER/platform-observability-stack.git
+    - https://prometheus-community.github.io/helm-charts
 
   # Where Applications in this project may deploy. Add namespaces here as later
-  # phases introduce them (monitoring, logging, tracing, argocd itself).
+  # phases introduce them (logging, tracing, chaos).
   destinations:
     - server: https://kubernetes.default.svc
       namespace: sample-app
     - server: https://kubernetes.default.svc
       namespace: argocd
+    - server: https://kubernetes.default.svc
+      namespace: monitoring
 
-  # The sample app only needs namespaced resources; allow them broadly but keep
-  # cluster-scoped resources empty (deny) for least privilege.
-  clusterResourceWhitelist: []
+  # kube-prometheus-stack installs cluster scoped resources (CRDs, ClusterRoles,
+  # ClusterRoleBindings), so the platform project must permit them.
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
   namespaceResourceWhitelist:
     - group: "*"
       kind: "*"
