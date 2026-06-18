@@ -1,0 +1,18 @@
+{{- if .Values.metrics.serviceMonitor.enabled }}
+# Requires the Prometheus Operator CRDs (installed in Phase 3). Tells Prometheus
+# to scrape the backend Service's /metrics endpoint.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "backend.name" . }}
+  labels:
+    {{- include "backend.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "backend.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: http
+      path: {{ .Values.metrics.path }}
+      interval: {{ .Values.metrics.serviceMonitor.interval }}
+{{- end }}

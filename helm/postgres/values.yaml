@@ -1,0 +1,42 @@
+# Single-instance Postgres for the demo. Intentionally simple — for production
+# you'd swap this for an operator (CloudNativePG/Zalando) or RDS. Good enough to
+# generate the request/latency/error signals the observability stack visualizes.
+
+image:
+  repository: postgres
+  tag: "16-alpine"
+  pullPolicy: IfNotPresent
+
+# Database bootstrap values. The chart renders these into a Secret named
+# `postgres-credentials`, which the backend chart consumes by reference.
+# Override `auth.password` via your secrets workflow — do NOT commit a real one.
+auth:
+  database: appdb
+  username: appuser
+  password: "changeme-dev-only"
+  # Name of the Secret created/consumed. Backend chart must use the same name.
+  existingSecret: postgres-credentials
+
+service:
+  port: 5432
+
+persistence:
+  enabled: true
+  size: 8Gi
+  # Empty => cluster default StorageClass. Phase 1 installs the EBS CSI driver,
+  # which provides a default gp3 class on EKS.
+  storageClass: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+
+# Postgres needs to write its data dir, so it can't run fully read-only, but we
+# still drop privileges and run as the postgres uid.
+podSecurityContext:
+  fsGroup: 999
+  runAsUser: 999
+  runAsGroup: 999

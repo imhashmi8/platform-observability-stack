@@ -1,0 +1,67 @@
+# Replace `image.repository` with your registry path, then set the immutable tag
+# at deploy time. ArgoCD tracks whatever tag is committed here (or overridden per
+# Application), so avoid `latest` — pin a digest or version for reproducible syncs.
+image:
+  repository: ghcr.io/OWNER/platform-obs-backend
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+service:
+  type: ClusterIP
+  port: 8000
+
+# Postgres connection. host points at the postgres chart's headless Service;
+# credentials come from the shared Secret (DB_USER/PASSWORD/NAME below).
+postgres:
+  host: postgres.sample-app.svc.cluster.local
+  port: 5432
+  existingSecret: postgres-credentials
+
+# OpenTelemetry. Left empty until Phase 5 points it at the OTel Collector; the
+# app treats an empty endpoint as "tracing disabled".
+otel:
+  endpoint: ""
+  serviceName: backend
+
+env:
+  environment: dev
+  logLevel: info
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
+# Prometheus scraping. The ServiceMonitor requires the Prometheus Operator CRD,
+# which Phase 3 installs — keep disabled until then. podAnnotations provide a
+# fallback for a plain Prometheus scrape-config in the meantime.
+metrics:
+  port: 8000
+  path: /metrics
+  serviceMonitor:
+    enabled: false
+    interval: 15s
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8000"
+  prometheus.io/path: /metrics
+
+# Hardened by default; the image already runs as uid 10001.
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]

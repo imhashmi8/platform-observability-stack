@@ -1,0 +1,6 @@
+apiVersion: v2
+name: postgres
+description: Minimal single-instance PostgreSQL for the sample app (dev-grade, not HA).
+type: application
+version: 0.1.0
+appVersion: "16"

@@ -1,0 +1,48 @@
+image:
+  repository: ghcr.io/OWNER/platform-obs-frontend
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+service:
+  type: ClusterIP
+  port: 80
+  # nginx-unprivileged listens on 8080 inside the container.
+  targetPort: 8080
+
+# Injected into nginx.conf at container start (envsubst) to proxy /api.
+backendUrl: http://backend.sample-app.svc.cluster.local:8000
+
+# Internet-facing entrypoint. Disabled by default — enable once Phase 1's AWS Load
+# Balancer Controller + external-dns are running, then set host to grafana-style
+# subdomain under your Route53 zone.
+ingress:
+  enabled: false
+  className: alb
+  host: app.example.com
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 32Mi
+  limits:
+    memory: 64Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 80
+
+securityContext:
+  runAsNonRoot: true
+  # nginx-unprivileged image runs as uid 101.
+  runAsUser: 101
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
