@@ -1,0 +1,22 @@
+# Grafana data source for Loki, delivered as a ConfigMap.
+# The Grafana sidecar from Phase 3 (sidecar.datasources.searchNamespace ALL)
+# watches for ConfigMaps carrying the grafana_datasource label and provisions
+# them automatically, so no Grafana restart or manual UI step is needed.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-grafana-datasource
+  namespace: monitoring
+  labels:
+    grafana_datasource: "1"
+data:
+  loki-datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki-gateway.logging.svc.cluster.local
+        isDefault: false
+        jsonData:
+          maxLines: 1000

@@ -1,0 +1,28 @@
+# Grafana data source ConfigMaps, applied straight from the grafana/datasources
+# directory (no Helm). Phase 4 adds Loki here; Phase 5 will add Tempo to the same
+# folder and this Application will pick it up automatically.
+# sync wave "-3" so the metrics stack (Grafana) is already running.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana-datasources
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/OWNER/platform-observability-stack.git
+    targetRevision: main
+    path: grafana/datasources
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
