@@ -17,6 +17,8 @@ data:
         type: loki
         access: proxy
         url: http://loki-gateway.logging.svc.cluster.local
+        # Stable uid so the Tempo data source can reference it for trace to logs.
+        uid: loki
         isDefault: false
         jsonData:
           maxLines: 1000

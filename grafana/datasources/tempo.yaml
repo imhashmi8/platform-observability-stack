@@ -1,0 +1,31 @@
+# Grafana data source for Tempo, delivered as a ConfigMap and picked up by the
+# Grafana sidecar exactly like the Loki one. Adds a trace to logs link so that
+# from a span in Tempo you can jump to the matching logs in Loki.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-grafana-datasource
+  namespace: monitoring
+  labels:
+    grafana_datasource: "1"
+data:
+  tempo-datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Tempo
+        type: tempo
+        access: proxy
+        url: http://tempo.tracing.svc.cluster.local:3100
+        uid: tempo
+        isDefault: false
+        jsonData:
+          # From a Tempo span, open Loki scoped to the same time window. The tag
+          # maps the span's service.name attribute onto the Loki "app" label that
+          # Promtail sets, so the button lands on that service's logs.
+          tracesToLogsV2:
+            datasourceUid: loki
+            spanStartTimeShift: "-1h"
+            spanEndTimeShift: "1h"
+            tags:
+              - key: service.name
+                value: app
