@@ -1,0 +1,13 @@
+# Remote state for the shared resources. Rename to backend.tf and run
+# terraform init -migrate-state. Uses the same bucket and lock table as the
+# environments, with its own key so nothing overlaps.
+
+terraform {
+  backend "s3" {
+    bucket         = "my-platform-obs-tfstate"
+    key            = "platform-observability-stack/shared/terraform.tfstate"
+    region         = "ap-south-1"
+    dynamodb_table = "platform-obs-tflock"
+    encrypt        = true
+  }
+}
