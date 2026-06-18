@@ -1,0 +1,28 @@
+# Phase 6 SLO rules: the SLI recording rules and SLO targets.
+# Directory app over slo/, so Phase 7 (error budget) and Phase 8 (burn rate)
+# can add more PrometheusRules to the same folder and they get applied here.
+# sync wave "-2" so the Prometheus Operator CRDs from the metrics stack exist.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: slo
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/imhashmi8/platform-observability-stack.git
+    targetRevision: main
+    path: slo
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

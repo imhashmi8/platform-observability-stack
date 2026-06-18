@@ -1,0 +1,58 @@
+# Phase 6 SLIs and SLO targets for the backend, as Prometheus recording rules.
+# Prometheus discovers this because Phase 3 set ruleSelectorNilUsesHelmValues to
+# false, so every PrometheusRule in the cluster is evaluated.
+#
+# Two SLIs, both built from the RED metrics the backend exposes:
+#   availability  successful requests / total requests
+#   latency       share of requests served faster than the 500ms threshold
+#
+# Health and metrics endpoints are excluded because they are not user facing.
+# Recording rules precompute the ratios so dashboards (here), the error budget
+# (Phase 7) and the burn rate alerts (Phase 8) all read cheap, consistent series.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: slo-backend
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: slo_backend_sli
+      interval: 30s
+      rules:
+        # ---- Availability: fraction of non 5xx responses ----
+        - record: sli:availability:ratio_rate5m
+          expr: |
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz",status!~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[5m]))
+        - record: sli:availability:ratio_rate30m
+          expr: |
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz",status!~"5.."}[30m]))
+            /
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[30m]))
+
+        # ---- Latency: fraction of requests faster than 500ms ----
+        # The le="0.5" bucket is cumulative, so it already counts every request
+        # at or under 500ms. Divide by the total request count for the ratio.
+        - record: sli:latency:ratio_rate5m
+          expr: |
+            sum(rate(http_request_duration_seconds_bucket{namespace="sample-app",path!~"/metrics|/healthz|/readyz",le="0.5"}[5m]))
+            /
+            sum(rate(http_request_duration_seconds_count{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[5m]))
+        - record: sli:latency:ratio_rate30m
+          expr: |
+            sum(rate(http_request_duration_seconds_bucket{namespace="sample-app",path!~"/metrics|/healthz|/readyz",le="0.5"}[30m]))
+            /
+            sum(rate(http_request_duration_seconds_count{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[30m]))
+
+    - name: slo_backend_targets
+      rules:
+        # SLO targets recorded as constant series so dashboards and alerts can
+        # reference one source of truth. Availability 99.9 percent, latency 95
+        # percent of requests under 500ms.
+        - record: slo:availability:target
+          expr: vector(0.999)
+        - record: slo:latency:target
+          expr: vector(0.95)
