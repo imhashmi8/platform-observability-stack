@@ -43,23 +43,29 @@ delivered to the Phase 1 EKS cluster by ArgoCD using the **app-of-apps** pattern
 - A container registry you can push to (ECR, GHCR, Docker Hub).
 - `helm`, `kubectl`, `docker` installed.
 
-## 1. Build and push the images
+## 1. Create the registry and push the images
 
-Replace `OWNER`/registry to match your account, then update the matching
-`image.repository` in `helm/backend/values.yaml` and `helm/frontend/values.yaml`.
+The ECR repositories are managed by Terraform in `terraform/shared` (applied once,
+separate from the per environment clusters). The Helm values already point
+`image.repository` at these repos.
 
 ```bash
-export REGISTRY=ghcr.io/OWNER
+# Create the ECR repos (once)
+cd terraform/shared
+terraform init && terraform apply
+eval "$(terraform output -raw docker_login)"   # authenticate Docker to ECR
+REGISTRY="$(terraform output -raw registry)"
+cd ../..
+
 export TAG=0.1.0
 
-docker build -t $REGISTRY/platform-obs-backend:$TAG  app/backend
-docker build -t $REGISTRY/platform-obs-frontend:$TAG app/frontend
-docker push $REGISTRY/platform-obs-backend:$TAG
-docker push $REGISTRY/platform-obs-frontend:$TAG
+# Build for linux/amd64 (the nodes are x86_64; required when building on Apple Silicon)
+docker buildx build --platform linux/amd64 -t $REGISTRY/platform-obs-backend:$TAG  --push app/backend
+docker buildx build --platform linux/amd64 -t $REGISTRY/platform-obs-frontend:$TAG --push app/frontend
 ```
 
-> ECR note: create the two repos first (`aws ecr create-repository --repository-name platform-obs-backend ...`)
-> and `aws ecr get-login-password | docker login --username AWS --password-stdin <acct>.dkr.ecr.<region>.amazonaws.com`.
+> EKS nodes can pull from ECR in the same account with no image pull secret, because
+> the managed node group role already has `AmazonEC2ContainerRegistryReadOnly`.
 
 ## 2. Point the manifests at YOUR git repo
 

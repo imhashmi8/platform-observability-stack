@@ -58,6 +58,7 @@ terraform/
   modules/platform/        Reusable Phase 1 module: VPC, EKS, node groups, IRSA, Route53
   environments/staging/    Composition: SPOT, single NAT, 2 AZ (cost-optimised)
   environments/production/ Composition: ON_DEMAND, NAT per-AZ, 3 AZ (HA)
+  shared/                  Account level resources applied once (ECR registry)
 app/         Sample application source (FastAPI backend, React frontend)
 helm/        Helm charts: postgres, backend, frontend
 argocd/      GitOps: AppProject, app-of-apps root, child Applications
