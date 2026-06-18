@@ -1,0 +1,33 @@
+# Phase 5 trace store: Tempo in single binary mode.
+# sync wave "-4" so the tracing namespace and Tempo exist before the collector
+# (wave -3) starts forwarding spans to it.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tempo
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: tempo
+      targetRevision: 1.24.4
+      helm:
+        valueFiles:
+          - $values/tempo/tempo-values.yaml
+    - repoURL: https://github.com/OWNER/platform-observability-stack.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tracing
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

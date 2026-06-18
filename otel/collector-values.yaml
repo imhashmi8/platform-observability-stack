@@ -1,0 +1,39 @@
+# Values for the open-telemetry/opentelemetry-collector chart (Phase 5).
+# Runs one collector as a gateway. Applications send OTLP to it, and it forwards
+# traces to Tempo. Putting a collector between the apps and Tempo is the standard
+# pattern: it gives one place to batch, sample, or fan out to more backends later
+# without touching the apps.
+
+mode: deployment
+replicaCount: 1
+fullnameOverride: otel-collector
+
+# This chart no longer ships a default image, so pick a distribution explicitly.
+# The core collector has everything this pipeline needs (otlp in, otlp out).
+image:
+  repository: otel/opentelemetry-collector
+command:
+  name: otelcol
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
+
+# Merged over the chart defaults. The defaults already define the otlp receiver
+# and the batch and memory_limiter processors, so here we only add the Tempo
+# exporter and a traces pipeline that uses it.
+config:
+  exporters:
+    otlp:
+      endpoint: tempo.tracing.svc.cluster.local:4317
+      tls:
+        insecure: true
+  service:
+    pipelines:
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [otlp]

@@ -1,0 +1,33 @@
+# Phase 5 trace pipeline: OpenTelemetry Collector gateway.
+# Receives OTLP from the application and forwards it to Tempo.
+# sync wave "-3" so Tempo (wave -4) is up first.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: otel-collector
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  sources:
+    - repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+      chart: opentelemetry-collector
+      targetRevision: 0.158.2
+      helm:
+        valueFiles:
+          - $values/otel/collector-values.yaml
+    - repoURL: https://github.com/OWNER/platform-observability-stack.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tracing
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

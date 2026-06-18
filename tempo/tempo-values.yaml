@@ -1,0 +1,30 @@
+# Values for the grafana/tempo chart (Phase 5), single binary mode.
+# Stores traces on a local filesystem volume. For production you would point the
+# storage backend at an S3 bucket using an IRSA role from Phase 1.
+
+tempo:
+  # The OpenTelemetry Collector forwards spans here over OTLP gRPC. The chart
+  # keeps its other default receivers (jaeger, zipkin) too; they listen but go
+  # unused, since the chart's service template requires the jaeger ports to exist.
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+# Keep traces across restarts. Mounts a PVC at the tempo data directory.
+persistence:
+  enabled: true
+  size: 10Gi
+
+# Tempo phones home with anonymous usage stats by default. Turn it off.
+reportingEnabled: false

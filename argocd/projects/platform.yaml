@@ -18,9 +18,10 @@ spec:
     - https://github.com/OWNER/platform-observability-stack.git
     - https://prometheus-community.github.io/helm-charts
     - https://grafana.github.io/helm-charts
+    - https://open-telemetry.github.io/opentelemetry-helm-charts
 
   # Where Applications in this project may deploy. Add namespaces here as later
-  # phases introduce them (tracing, chaos).
+  # phases introduce them (chaos).
   destinations:
     - server: https://kubernetes.default.svc
       namespace: sample-app
@@ -30,6 +31,8 @@ spec:
       namespace: monitoring
     - server: https://kubernetes.default.svc
       namespace: logging
+    - server: https://kubernetes.default.svc
+      namespace: tracing
 
   # kube-prometheus-stack installs cluster scoped resources (CRDs, ClusterRoles,
   # ClusterRoleBindings), so the platform project must permit them.
