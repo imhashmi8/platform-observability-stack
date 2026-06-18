@@ -1,18 +1,27 @@
-# Terraform
+# Terraform working directory and provider plugins
 .terraform/
-# NOTE: .terraform.lock.hcl is intentionally committed for reproducible providers.
+.terraform.lock.hcl
+
+# State and its locks (never commit state; it can contain secrets)
 *.tfstate
 *.tfstate.*
+.terraform.tfstate.lock.info
+
+# Crash logs
 crash.log
 crash.*.log
 
 # Variable files with real values / secrets
 terraform.tfvars
+*.tfvars.json
 *.auto.tfvars
+*.auto.tfvars.json
 override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
 
-# Plans
+# CLI config and saved plans
+.terraformrc
+terraform.rc
 *.tfplan
