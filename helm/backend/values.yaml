@@ -2,7 +2,7 @@
 # at deploy time. ArgoCD tracks whatever tag is committed here (or overridden per
 # Application), so avoid `latest` — pin a digest or version for reproducible syncs.
 image:
-  repository: ghcr.io/OWNER/platform-obs-backend
+  repository: 528956693660.dkr.ecr.ap-south-1.amazonaws.com/platform-obs-backend
   tag: "0.1.0"
   pullPolicy: IfNotPresent
 

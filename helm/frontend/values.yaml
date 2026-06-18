@@ -1,5 +1,5 @@
 image:
-  repository: ghcr.io/OWNER/platform-obs-frontend
+  repository: 528956693660.dkr.ecr.ap-south-1.amazonaws.com/platform-obs-frontend
   tag: "0.1.0"
   pullPolicy: IfNotPresent
 
