@@ -12,7 +12,7 @@ metadata:
 spec:
   project: platform
   source:
-    repoURL: https://github.com/OWNER/platform-observability-stack.git
+    repoURL: https://github.com/imhashmi8/platform-observability-stack.git
     targetRevision: main
     path: helm/postgres
   destination:

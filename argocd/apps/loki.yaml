@@ -20,7 +20,7 @@ spec:
       helm:
         valueFiles:
           - $values/loki/loki-values.yaml
-    - repoURL: https://github.com/OWNER/platform-observability-stack.git
+    - repoURL: https://github.com/imhashmi8/platform-observability-stack.git
       targetRevision: main
       ref: values
   destination:
