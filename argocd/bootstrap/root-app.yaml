@@ -1,0 +1,28 @@
+# The "app of apps" root. Apply this ONCE (kubectl apply -f) after ArgoCD is
+# installed; from then on ArgoCD manages everything else by syncing the
+# Application manifests under argocd/apps/ — including itself's children.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-bootstrap
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/OWNER/platform-observability-stack.git
+    targetRevision: main
+    # Recurse the apps directory; each file there is a child Application.
+    path: argocd/apps
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

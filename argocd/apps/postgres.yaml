@@ -1,0 +1,26 @@
+# Postgres — sync-wave 0 so the database and its credentials Secret exist before
+# the backend (wave 1) starts and tries to connect.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: postgres
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/OWNER/platform-observability-stack.git
+    targetRevision: main
+    path: helm/postgres
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sample-app
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

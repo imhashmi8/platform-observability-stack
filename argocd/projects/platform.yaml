@@ -1,0 +1,32 @@
+# AppProject that scopes what the platform's Applications are allowed to do.
+# Tighter than the default project: restricts source repos and destination
+# namespaces so a bad Application can't deploy anywhere in the cluster.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
+  # Keep the project around even if this manifest is pruned.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: Sample application + observability stack for platform-observability-stack.
+
+  # Only this repo. Update to your fork's URL (also referenced by every Application).
+  sourceRepos:
+    - https://github.com/OWNER/platform-observability-stack.git
+
+  # Where Applications in this project may deploy. Add namespaces here as later
+  # phases introduce them (monitoring, logging, tracing, argocd itself).
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: sample-app
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+
+  # The sample app only needs namespaced resources; allow them broadly but keep
+  # cluster-scoped resources empty (deny) for least privilege.
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

@@ -1,0 +1,31 @@
+# Backend — sync-wave 1, after Postgres. Its readiness probe gates traffic until
+# the DB is reachable, so a brief race during first sync self-heals.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: backend
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/OWNER/platform-observability-stack.git
+    targetRevision: main
+    path: helm/backend
+    # Pin the image tag here per-environment rather than editing the chart, e.g.:
+    # helm:
+    #   parameters:
+    #     - name: image.tag
+    #       value: "0.1.0"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sample-app
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
