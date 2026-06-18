@@ -1,0 +1,14 @@
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+prometheus-client==0.20.0
+psycopg[binary,pool]==3.1.19
+pydantic==2.7.4
+pydantic-settings==2.3.4
+
+# OpenTelemetry — instrumented now, wired to a real exporter in Phase 5.
+# OTEL_* env vars (see config.py) control whether spans are actually exported,
+# so these are safe to ship before Tempo/the OTel Collector exist.
+opentelemetry-distro==0.46b0
+opentelemetry-exporter-otlp==1.25.0
+opentelemetry-instrumentation-fastapi==0.46b0
+opentelemetry-instrumentation-psycopg==0.46b0
