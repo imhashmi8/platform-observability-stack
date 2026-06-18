@@ -31,7 +31,7 @@ engineering, built around a real sample application.
 | 3 | Metrics: Prometheus, kube-state-metrics, node-exporter, custom app metrics | ✅ done | `prometheus/`, `argocd/apps/` see [docs/PHASE3.md](docs/PHASE3.md) |
 | 4 | Logging: Loki + Promtail | ✅ done | `loki/`, `grafana/datasources/` see [docs/PHASE4.md](docs/PHASE4.md) |
 | 5 | Distributed tracing: Tempo + OpenTelemetry Collector | ✅ done | `tempo/`, `otel/` see [docs/PHASE5.md](docs/PHASE5.md) |
-| 6 | SLI / SLO dashboards | ⬜ todo | `slo/` |
+| 6 | SLI / SLO dashboards | ✅ done | `slo/`, `grafana/dashboards/` see [docs/PHASE6.md](docs/PHASE6.md) |
 | 7 | Error budgets | ⬜ todo | `slo/` |
 | 8 | Burn-rate alerts: Alertmanager to Slack | ⬜ todo | `alerts/` |
 | 9 | Chaos engineering: LitmusChaos (bonus) | ⬜ todo | `chaos/` |
