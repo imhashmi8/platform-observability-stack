@@ -1,0 +1,28 @@
+# Grafana dashboard ConfigMaps, applied from grafana/dashboards. The Grafana
+# sidecar imports any ConfigMap labelled grafana_dashboard, so dropping a new
+# dashboard file in that folder is enough to publish it.
+# sync wave "-2" so Grafana from the metrics stack is already running.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana-dashboards
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/imhashmi8/platform-observability-stack.git
+    targetRevision: main
+    path: grafana/dashboards
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

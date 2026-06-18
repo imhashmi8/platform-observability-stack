@@ -1,0 +1,146 @@
+# Backend SLO dashboard, delivered as a ConfigMap. The Grafana sidecar from
+# Phase 3 (sidecar.dashboards.enabled, searchNamespace ALL) imports any ConfigMap
+# carrying the grafana_dashboard label, so this needs no manual import.
+# The panels read the recording rules from slo/recording-rules.yaml.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: slo-backend-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  slo-backend.json: |
+    {
+      "title": "Backend SLO",
+      "uid": "backend-slo",
+      "schemaVersion": 39,
+      "editable": true,
+      "time": {"from": "now-6h", "to": "now"},
+      "templating": {
+        "list": [
+          {
+            "name": "datasource",
+            "type": "datasource",
+            "query": "prometheus",
+            "hide": 0,
+            "current": {}
+          }
+        ]
+      },
+      "panels": [
+        {
+          "type": "stat",
+          "title": "Availability SLI (30m)",
+          "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "min": 0,
+              "max": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 0.99},
+                  {"color": "green", "value": 0.999}
+                ]
+              }
+            }
+          },
+          "targets": [
+            {"expr": "sli:availability:ratio_rate30m", "refId": "A"}
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Latency SLI (30m, % under 500ms)",
+          "gridPos": {"h": 6, "w": 6, "x": 6, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "min": 0,
+              "max": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 0.9},
+                  {"color": "green", "value": 0.95}
+                ]
+              }
+            }
+          },
+          "targets": [
+            {"expr": "sli:latency:ratio_rate30m", "refId": "A"}
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Error rate (5m)",
+          "gridPos": {"h": 6, "w": 6, "x": 12, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 0.001},
+                  {"color": "red", "value": 0.01}
+                ]
+              }
+            }
+          },
+          "targets": [
+            {"expr": "sum(rate(http_requests_total{namespace=\"sample-app\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{namespace=\"sample-app\"}[5m]))", "refId": "A"}
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Availability vs target (5m)",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1}},
+          "targets": [
+            {"expr": "sli:availability:ratio_rate5m", "refId": "A", "legendFormat": "availability"},
+            {"expr": "slo:availability:target", "refId": "B", "legendFormat": "target"}
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "p95 latency (5m)",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "red", "value": 0.5}
+                ]
+              }
+            }
+          },
+          "targets": [
+            {"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"sample-app\",path!~\"/metrics|/healthz|/readyz\"}[5m])) by (le))", "refId": "A", "legendFormat": "p95"}
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Request rate by status (5m)",
+          "gridPos": {"h": 8, "w": 24, "x": 0, "y": 14},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"unit": "reqps"}},
+          "targets": [
+            {"expr": "sum(rate(http_requests_total{namespace=\"sample-app\"}[5m])) by (status)", "refId": "A", "legendFormat": "{{status}}"}
+          ]
+        }
+      ]
+    }
