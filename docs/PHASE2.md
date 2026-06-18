@@ -1,4 +1,4 @@
-# Phase 2 — Sample Application + GitOps
+# Phase 2: Sample Application + GitOps
 
 A three-tier sample app (React → FastAPI → Postgres), packaged as Helm charts and
 delivered to the Phase 1 EKS cluster by ArgoCD using the **app-of-apps** pattern.
@@ -65,7 +65,7 @@ docker push $REGISTRY/platform-obs-frontend:$TAG
 
 Every ArgoCD `Application` and the `AppProject` reference
 `https://github.com/OWNER/platform-observability-stack.git`. Replace `OWNER` with
-your fork across `argocd/**` and commit/push — ArgoCD reads charts from git, not
+your fork across `argocd/**` and commit/push, since ArgoCD reads charts from git, not
 from your laptop.
 
 ```bash
@@ -87,9 +87,9 @@ externally-created `postgres-credentials` Secret) rather than committing it.
 This installs ArgoCD (Helm), registers the `platform` project, and applies the
 root app-of-apps. ArgoCD then syncs, in order:
 
-1. **wave 0** — postgres (creates the DB + `postgres-credentials` Secret)
-2. **wave 1** — backend
-3. **wave 2** — frontend
+1. **wave 0**: postgres (creates the DB + `postgres-credentials` Secret)
+2. **wave 1**: backend
+3. **wave 2**: frontend
 
 Watch it converge:
 
@@ -104,7 +104,7 @@ Without an Ingress (default), port-forward:
 
 ```bash
 kubectl -n sample-app port-forward svc/frontend 8088:80
-# open http://localhost:8088 — add items, they persist in Postgres
+# open http://localhost:8088, add items, they persist in Postgres
 ```
 
 To expose it publicly, set `ingress.enabled=true` (and `ingress.host`) in
@@ -117,7 +117,7 @@ external-dns are running.
 kubectl -n sample-app port-forward svc/backend 8000:8000
 curl localhost:8000/healthz   # liveness
 curl localhost:8000/readyz    # readiness (checks Postgres)
-curl localhost:8000/metrics   # Prometheus exposition — http_requests_total, etc.
+curl localhost:8000/metrics   # Prometheus exposition, http_requests_total, etc.
 ```
 
 ## Local dev (no cluster)
@@ -136,4 +136,4 @@ cd app/frontend && npm install && npm run dev
 - **ServiceMonitor** is gated behind `metrics.serviceMonitor.enabled` until Phase 3
   installs the Prometheus Operator CRDs.
 - **OTel export** is a no-op until Phase 5 sets `otel.endpoint` to the collector.
-- Postgres is single-instance/dev-grade — swap for an operator or RDS for prod.
+- Postgres is single-instance/dev-grade, so swap for an operator or RDS for prod.

@@ -1,4 +1,4 @@
-# Terraform — Phase 1 platform foundation
+# Terraform: Phase 1 platform foundation
 
 Reusable module + per-environment compositions.
 
@@ -11,7 +11,7 @@ environments/
 
 The environments are thin: each is a `module "platform"` call plus its own
 providers, backend (state), and output re-exports. All infrastructure lives in
-the module — diff `environments/staging/main.tf` against `production/main.tf` to
+the module. Diff `environments/staging/main.tf` against `production/main.tf` to
 see exactly what changes between tiers.
 
 ## Usage
@@ -23,7 +23,7 @@ terraform plan
 terraform apply
 ```
 
-State is **per environment** — copy `backend.tf.example` → `backend.tf` in each
+State is **per environment**. Copy `backend.tf.example` to `backend.tf` in each
 env (the S3 `key` differs) and `terraform init -migrate-state`. Staging and
 production never share a state file.
 
