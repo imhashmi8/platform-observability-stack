@@ -75,6 +75,12 @@ variable "node_capacity_type" {
   default     = "SPOT"
 }
 
+variable "single_az_node_group" {
+  description = "Pin the managed node group to a single AZ (the first private subnet) to avoid EBS volume AZ-affinity problems under SPOT churn. Leave false for production HA."
+  type        = bool
+  default     = false
+}
+
 variable "node_min_size" {
   type    = number
   default = 2

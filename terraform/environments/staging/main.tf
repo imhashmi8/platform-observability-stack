@@ -29,6 +29,10 @@ module "platform" {
   node_max_size       = 4
   node_desired_size   = 2
 
+  # Keep all nodes in one AZ so EBS-backed pods (Prometheus, Loki, Tempo,
+  # Postgres) are never stranded when SPOT capacity shifts nodes between AZs.
+  single_az_node_group = true
+
   # Open API endpoint is fine for a throwaway staging cluster; lock to your /32
   # if it lives longer than a demo.
   cluster_endpoint_public_access       = true

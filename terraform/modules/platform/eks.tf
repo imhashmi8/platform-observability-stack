@@ -48,6 +48,13 @@ module "eks" {
       instance_types = var.node_instance_types
       capacity_type  = var.node_capacity_type
 
+      # When single_az_node_group is set, restrict the node group to the first
+      # private subnet (one AZ). EBS volumes are AZ-locked, so keeping every node
+      # in one AZ stops stateful pods from being stranded when SPOT capacity moves
+      # nodes between AZs. The cluster itself still spans all AZs. Leave it off for
+      # production, where you want nodes spread for availability.
+      subnet_ids = var.single_az_node_group ? slice(module.vpc.private_subnets, 0, 1) : module.vpc.private_subnets
+
       min_size     = var.node_min_size
       max_size     = var.node_max_size
       desired_size = var.node_desired_size
