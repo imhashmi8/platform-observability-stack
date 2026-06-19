@@ -3,7 +3,7 @@
 # Application), so avoid `latest` — pin a digest or version for reproducible syncs.
 image:
   repository: 528956693660.dkr.ecr.ap-south-1.amazonaws.com/platform-obs-backend
-  tag: "0.1.0"
+  tag: "0.1.1"
   pullPolicy: IfNotPresent
 
 replicaCount: 2

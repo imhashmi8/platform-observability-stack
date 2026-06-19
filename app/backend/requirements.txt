@@ -5,6 +5,11 @@ psycopg[binary,pool]==3.1.19
 pydantic==2.7.4
 pydantic-settings==2.3.4
 
+# Python 3.12 venvs no longer ship setuptools, but the OpenTelemetry
+# instrumentation libraries import pkg_resources (provided by setuptools).
+# Without this the app crashes on startup with ModuleNotFoundError: pkg_resources.
+setuptools==70.3.0
+
 # OpenTelemetry — instrumented now, wired to a real exporter in Phase 5.
 # OTEL_* env vars (see config.py) control whether spans are actually exported,
 # so these are safe to ship before Tempo/the OTel Collector exist.
