@@ -10,5 +10,11 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.40"
     }
+    # Used only for the default StorageClass (see storage.tf). The provider itself
+    # is configured by the calling environment against this module's cluster.
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.27"
+    }
   }
 }

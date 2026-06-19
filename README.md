@@ -55,7 +55,7 @@ aws eks update-kubeconfig --region "$(terraform output -raw region)" \
 
 ```
 terraform/
-  modules/platform/        Reusable Phase 1 module: VPC, EKS, node groups, IRSA, Route53
+  modules/platform/        Reusable Phase 1 module: VPC, EKS, node groups, IRSA, Route53, default StorageClass
   environments/staging/    Composition: SPOT, single NAT, 2 AZ (cost-optimised)
   environments/production/ Composition: ON_DEMAND, NAT per-AZ, 3 AZ (HA)
   shared/                  Account level resources applied once (ECR registry)

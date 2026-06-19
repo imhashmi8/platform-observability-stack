@@ -3,7 +3,7 @@
 Reusable module + per-environment compositions.
 
 ```
-modules/platform/        # one source of truth: VPC, EKS, node groups, IRSA, Route53
+modules/platform/        # one source of truth: VPC, EKS, node groups, IRSA, Route53, default StorageClass
 environments/
   staging/               # SPOT · single NAT · 2 AZ · t3.large   (cost-optimised)
   production/            # ON_DEMAND · NAT/AZ · 3 AZ · m5.large   (HA)
