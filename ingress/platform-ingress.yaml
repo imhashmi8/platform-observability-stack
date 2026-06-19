@@ -107,7 +107,7 @@ metadata:
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
     alb.ingress.kubernetes.io/load-balancer-name: platform
-    alb.ingress.kubernetes.io/inbound-cidrs: 223.226.67.105/32
+    alb.ingress.kubernetes.io/inbound-cidrs: REPLACE_WITH_YOUR_IP/32
     alb.ingress.kubernetes.io/healthcheck-path: /healthz
 spec:
   ingressClassName: alb
