@@ -1,0 +1,34 @@
+# Ingress that exposes the ArgoCD UI through an internet-facing ALB, locked to a
+# single source IP. Apply this with kubectl after the load balancer controller is
+# running. It is intentionally not auto-synced by ArgoCD so your IP is not
+# committed to git; substitute it at apply time (see docs/ACCESS-ARGOCD.md).
+#
+# ArgoCD server runs in insecure mode (plain HTTP on port 80) from the bootstrap,
+# so the ALB talks HTTP to it. No TLS here because there is no domain or ACM cert
+# yet; treat this as demo access only.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-server
+  namespace: argocd
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/load-balancer-name: argocd
+    # Replace with your public IP. Find it with: curl -s ifconfig.me
+    alb.ingress.kubernetes.io/inbound-cidrs: 223.226.67.105/32
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: argocd-server
+                port:
+                  number: 80
