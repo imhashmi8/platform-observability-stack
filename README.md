@@ -36,6 +36,36 @@ engineering, built around a real sample application.
 | 8 | Burn-rate alerts: Alertmanager to Slack | ⬜ todo | `alerts/` |
 | 9 | Chaos engineering: LitmusChaos (bonus) | ⬜ todo | `chaos/` |
 
+## Screenshots
+
+Everything below runs live on the EKS cluster, with all UIs served behind a single
+shared ALB (Grafana, Prometheus, Alertmanager, and the sample app on one load balancer).
+
+### Distributed tracing (Tempo)
+
+End to end traces from the sample app, exported over OTLP through the OpenTelemetry
+Collector into Tempo. Each request span carries its child database `SELECT` span.
+
+![Tempo trace for a backend request, showing the SELECT child span](docs/screenshots/grafana-tempo-trace-backend.png)
+
+### Logs (Loki)
+
+Application and platform logs shipped by Promtail into Loki, explored by namespace.
+
+![Loki logs grouped by namespace: kube-system and sample-app](docs/screenshots/grafana-logs-drilldown-namespaces.png)
+![Loki logs grouped by namespace: argocd and logging](docs/screenshots/grafana-logs-drilldown-argocd-logging.png)
+
+### Metrics (Prometheus + Grafana)
+
+Cluster, node, pod, and workload views from kube-state-metrics and node-exporter.
+
+| | |
+|---|---|
+| ![Cluster compute: CPU](docs/screenshots/grafana-cluster-compute-cpu.png) | ![Cluster compute: memory](docs/screenshots/grafana-cluster-compute-memory.png) |
+| ![Cluster compute: network](docs/screenshots/grafana-cluster-compute-network.png) | ![Pod compute: argocd application controller](docs/screenshots/grafana-pod-compute-argocd-controller.png) |
+| ![Node compute: CPU](docs/screenshots/grafana-node-compute-cpu.png) | ![Node compute: memory](docs/screenshots/grafana-node-compute-memory.png) |
+| ![Workload compute: sample-app CPU](docs/screenshots/grafana-workload-sample-app-cpu.png) | ![Workload compute: sample-app memory](docs/screenshots/grafana-workload-sample-app-memory.png) |
+
 ## Quick start
 
 ```bash
