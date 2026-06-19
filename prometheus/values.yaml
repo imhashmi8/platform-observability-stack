@@ -27,6 +27,10 @@ prometheus:
     retention: 15d
     retentionSize: 18GB
 
+    # Served under /prometheus on the shared ALB. The ALB forwards the path as is
+    # (no rewrite), so Prometheus must own that prefix.
+    routePrefix: /prometheus
+
     # Pick up every ServiceMonitor, PodMonitor and PrometheusRule in the cluster,
     # not only the ones carrying this release's labels. This is what lets the
     # backend ServiceMonitor (and the SLO rules added in Phase 6) be discovered.
@@ -61,6 +65,8 @@ prometheus:
 alertmanager:
   enabled: true
   alertmanagerSpec:
+    # Served under /alertmanager on the shared ALB.
+    routePrefix: /alertmanager
     resources:
       requests:
         cpu: 50m
@@ -85,6 +91,13 @@ grafana:
   # Dev default only. For anything real, set admin.existingSecret to a Secret you
   # manage out of band rather than committing a password.
   adminPassword: "changeme-grafana-dev"
+
+  # Served under /grafana on the shared ALB. serve_from_sub_path makes Grafana
+  # emit asset and API URLs under that prefix so the UI works behind the path.
+  grafana.ini:
+    server:
+      root_url: "%(protocol)s://%(domain)s/grafana"
+      serve_from_sub_path: true
 
   persistence:
     enabled: true
