@@ -1,0 +1,32 @@
+# AWS Load Balancer Controller. Turns Ingress objects (like the ArgoCD one) into
+# real ALBs. Runs in kube-system because the Phase 1 IRSA role trusts exactly
+# kube-system:aws-load-balancer-controller.
+# sync wave "-9" so it is one of the first things up; later Ingresses depend on it.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aws-load-balancer-controller
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-9"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  sources:
+    - repoURL: https://aws.github.io/eks-charts
+      chart: aws-load-balancer-controller
+      targetRevision: 3.4.0
+      helm:
+        valueFiles:
+          - $values/aws-lb-controller/values.yaml
+    - repoURL: https://github.com/imhashmi8/platform-observability-stack.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

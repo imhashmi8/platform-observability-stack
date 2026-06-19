@@ -1,0 +1,23 @@
+# Values for the eks/aws-load-balancer-controller chart.
+# This controller watches Ingress and Service objects and provisions real AWS
+# ALBs and NLBs for them. Phase 1 created the IAM role it assumes (IRSA); here we
+# point the service account at that role.
+
+clusterName: platform-obs-staging
+region: ap-south-1
+
+# Use the IRSA role from Phase 1. The role's trust policy is scoped to exactly
+# this service account (kube-system:aws-load-balancer-controller), so the name
+# and namespace must match. Confirm the ARN with:
+#   terraform -chdir=terraform/environments/staging output -raw aws_lb_controller_irsa_role_arn
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::528956693660:role/platform-obs-staging-aws-lb-controller
+
+# One replica is plenty for a demo cluster. The default is 2 for HA.
+replicaCount: 1
+
+# vpcId is auto-discovered from the node's instance metadata. If discovery ever
+# fails, set it explicitly from `terraform output vpc_id`.
