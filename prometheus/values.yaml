@@ -24,7 +24,9 @@ kubeProxy:
 # -----------------------------------------------------------------------------
 prometheus:
   prometheusSpec:
-    retention: 15d
+    # 30d so the Phase 7 error budget rules have a full SLO window of samples to
+    # rate over. retentionSize is the hard cap; whichever limit is hit first wins.
+    retention: 30d
     retentionSize: 18GB
 
     # Served under /prometheus on the shared ALB. The ALB forwards the path as is
@@ -59,14 +61,22 @@ prometheus:
               storage: 20Gi
 
 # -----------------------------------------------------------------------------
-# Alertmanager. Kept minimal here. Phase 8 adds the burn rate routes and the
-# Slack receiver.
+# Alertmanager. Phase 8 routes the burn rate alerts to Slack by severity.
+#
+# The Slack webhook URL is a secret, so it is NOT in this file. Create a Secret
+# named alertmanager-slack with a key "webhook" holding the incoming webhook URL
+# (see docs/PHASE8.md), and the alertmanagerSpec.secrets list below mounts it at
+# /etc/alertmanager/secrets/alertmanager-slack/webhook. The receivers read it
+# with slack_api_url_file so nothing sensitive is committed.
 # -----------------------------------------------------------------------------
 alertmanager:
   enabled: true
   alertmanagerSpec:
     # Served under /alertmanager on the shared ALB.
     routePrefix: /alertmanager
+    # Mounts the Slack webhook Secret into the Alertmanager pods.
+    secrets:
+      - alertmanager-slack
     resources:
       requests:
         cpu: 50m
@@ -80,6 +90,54 @@ alertmanager:
           resources:
             requests:
               storage: 5Gi
+
+  # Rendered into the Alertmanager config secret by the chart.
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      # Group by the alert and which SLO it concerns so related burns batch up.
+      group_by: ["alertname", "slo"]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      receiver: "slack-warning"
+      routes:
+        # The kube-prometheus-stack Watchdog always fires by design; drop it.
+        - matchers: ['alertname = "Watchdog"']
+          receiver: "null"
+        - matchers: ['severity = "critical"']
+          receiver: "slack-critical"
+          repeat_interval: 1h
+        - matchers: ['severity = "warning"']
+          receiver: "slack-warning"
+    receivers:
+      - name: "null"
+      - name: "slack-critical"
+        slack_configs:
+          - channel: "#alerts-critical"
+            send_resolved: true
+            slack_api_url_file: /etc/alertmanager/secrets/alertmanager-slack/webhook
+            title: '[{{ .Status | toUpper }}] {{ .CommonAnnotations.summary }}'
+            text: >-
+              {{ range .Alerts }}*{{ .Annotations.summary }}*
+              {{ .Annotations.description }}
+              {{ end }}
+      - name: "slack-warning"
+        slack_configs:
+          - channel: "#alerts-warning"
+            send_resolved: true
+            slack_api_url_file: /etc/alertmanager/secrets/alertmanager-slack/webhook
+            title: '[{{ .Status | toUpper }}] {{ .CommonAnnotations.summary }}'
+            text: >-
+              {{ range .Alerts }}*{{ .Annotations.summary }}*
+              {{ .Annotations.description }}
+              {{ end }}
+    # A critical burn for an SLO silences the warning burns for the same SLO.
+    inhibit_rules:
+      - source_matchers: ['severity = "critical"']
+        target_matchers: ['severity = "warning"']
+        equal: ["slo"]
 
 # -----------------------------------------------------------------------------
 # Grafana. This is the single Grafana the whole platform uses. Phase 4 and 5

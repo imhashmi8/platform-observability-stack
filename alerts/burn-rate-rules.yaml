@@ -1,0 +1,201 @@
+# Phase 8: multi window, multi burn rate alerts on the backend SLOs.
+#
+# Burn rate is how fast the error budget is being spent: a burn rate of 1 spends
+# the whole budget exactly over the SLO window, 14.4 spends it in ~2 days, etc.
+# Each alert fires only when BOTH a long and a short window exceed the threshold.
+# The long window catches sustained burn; the short window makes the alert clear
+# quickly once the problem stops, cutting false pages (the Google SRE pattern).
+#
+#   severity   long / short   burn rate   budget spent before firing   routes to
+#   critical   1h  / 5m       14.4        2 percent                    page
+#   critical   6h  / 30m      6           5 percent                    page
+#   warning    1d  / 2h       3           10 percent                   ticket
+#   warning    3d  / 6h       1           10 percent                   ticket
+#
+# Thresholds reference slo:<sli>:error_budget (recorded in slo/error-budget-rules.yaml)
+# via scalar(), so the budget lives in exactly one place.
+#
+# Prometheus discovers this PrometheusRule automatically (Phase 3 set
+# ruleSelectorNilUsesHelmValues to false). The argocd/apps/alerts.yaml Application
+# applies everything under alerts/.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: slo-backend-burn-rate
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    # ---- Error ratios over every window the alerts pair up ----
+    - name: slo_backend_error_ratios
+      interval: 30s
+      rules:
+        - record: sli:availability:error_ratio_rate5m
+          expr: |
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz",status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[5m]))
+        - record: sli:availability:error_ratio_rate30m
+          expr: |
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz",status=~"5.."}[30m]))
+            /
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[30m]))
+        - record: sli:availability:error_ratio_rate1h
+          expr: |
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz",status=~"5.."}[1h]))
+            /
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[1h]))
+        - record: sli:availability:error_ratio_rate2h
+          expr: |
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz",status=~"5.."}[2h]))
+            /
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[2h]))
+        - record: sli:availability:error_ratio_rate6h
+          expr: |
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz",status=~"5.."}[6h]))
+            /
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[6h]))
+        - record: sli:availability:error_ratio_rate1d
+          expr: |
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz",status=~"5.."}[1d]))
+            /
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[1d]))
+        - record: sli:availability:error_ratio_rate3d
+          expr: |
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz",status=~"5.."}[3d]))
+            /
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[3d]))
+
+        # Latency "errors" are requests slower than the 500ms threshold:
+        # 1 - (requests under 500ms / total).
+        - record: sli:latency:error_ratio_rate5m
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{namespace="sample-app",path!~"/metrics|/healthz|/readyz",le="0.5"}[5m]))
+              /
+              sum(rate(http_request_duration_seconds_count{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[5m]))
+            )
+        - record: sli:latency:error_ratio_rate30m
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{namespace="sample-app",path!~"/metrics|/healthz|/readyz",le="0.5"}[30m]))
+              /
+              sum(rate(http_request_duration_seconds_count{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[30m]))
+            )
+        - record: sli:latency:error_ratio_rate1h
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{namespace="sample-app",path!~"/metrics|/healthz|/readyz",le="0.5"}[1h]))
+              /
+              sum(rate(http_request_duration_seconds_count{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[1h]))
+            )
+        - record: sli:latency:error_ratio_rate6h
+          expr: |
+            1 - (
+              sum(rate(http_request_duration_seconds_bucket{namespace="sample-app",path!~"/metrics|/healthz|/readyz",le="0.5"}[6h]))
+              /
+              sum(rate(http_request_duration_seconds_count{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[6h]))
+            )
+
+    # ---- Availability burn rate alerts ----
+    - name: slo_backend_availability_burn
+      rules:
+        - alert: BackendAvailabilityFastBurn
+          expr: |
+            sli:availability:error_ratio_rate1h > (14.4 * scalar(slo:availability:error_budget))
+            and
+            sli:availability:error_ratio_rate5m > (14.4 * scalar(slo:availability:error_budget))
+          for: 2m
+          labels:
+            severity: critical
+            slo: availability
+          annotations:
+            summary: "Backend availability budget burning fast (14.4x)"
+            description: "Over 1h and 5m the 5xx error rate exceeds 14.4x the budget. At this rate the 30d availability budget is gone in ~2 days."
+        - alert: BackendAvailabilitySlowBurn
+          expr: |
+            sli:availability:error_ratio_rate6h > (6 * scalar(slo:availability:error_budget))
+            and
+            sli:availability:error_ratio_rate30m > (6 * scalar(slo:availability:error_budget))
+          for: 5m
+          labels:
+            severity: critical
+            slo: availability
+          annotations:
+            summary: "Backend availability budget burning (6x)"
+            description: "Over 6h and 30m the 5xx error rate exceeds 6x the budget."
+        - alert: BackendAvailabilityBudgetBurn3x
+          expr: |
+            sli:availability:error_ratio_rate1d > (3 * scalar(slo:availability:error_budget))
+            and
+            sli:availability:error_ratio_rate2h > (3 * scalar(slo:availability:error_budget))
+          for: 15m
+          labels:
+            severity: warning
+            slo: availability
+          annotations:
+            summary: "Backend availability budget burning (3x)"
+            description: "Over 1d and 2h the 5xx error rate exceeds 3x the budget. Open a ticket."
+        - alert: BackendAvailabilityBudgetBurn1x
+          expr: |
+            sli:availability:error_ratio_rate3d > (1 * scalar(slo:availability:error_budget))
+            and
+            sli:availability:error_ratio_rate6h > (1 * scalar(slo:availability:error_budget))
+          for: 1h
+          labels:
+            severity: warning
+            slo: availability
+          annotations:
+            summary: "Backend availability budget burning (1x)"
+            description: "Over 3d and 6h the 5xx error rate exceeds 1x the budget. The 30d budget will not last the window."
+
+    # ---- Latency burn rate alerts (fast burn only) ----
+    - name: slo_backend_latency_burn
+      rules:
+        - alert: BackendLatencyFastBurn
+          expr: |
+            sli:latency:error_ratio_rate1h > (14.4 * scalar(slo:latency:error_budget))
+            and
+            sli:latency:error_ratio_rate5m > (14.4 * scalar(slo:latency:error_budget))
+          for: 2m
+          labels:
+            severity: critical
+            slo: latency
+          annotations:
+            summary: "Backend latency budget burning fast (14.4x)"
+            description: "Over 1h and 5m the share of requests slower than 500ms exceeds 14.4x the budget."
+        - alert: BackendLatencySlowBurn
+          expr: |
+            sli:latency:error_ratio_rate6h > (6 * scalar(slo:latency:error_budget))
+            and
+            sli:latency:error_ratio_rate30m > (6 * scalar(slo:latency:error_budget))
+          for: 5m
+          labels:
+            severity: warning
+            slo: latency
+          annotations:
+            summary: "Backend latency budget burning (6x)"
+            description: "Over 6h and 30m the share of requests slower than 500ms exceeds 6x the budget."
+
+    # ---- Error budget exhaustion warning ----
+    - name: slo_backend_budget_low
+      rules:
+        - alert: BackendAvailabilityBudgetLow
+          expr: slo:availability:error_budget_remaining_ratio < 0.1
+          for: 10m
+          labels:
+            severity: warning
+            slo: availability
+          annotations:
+            summary: "Backend availability error budget nearly exhausted"
+            description: "Less than 10 percent of the 30d availability error budget remains."
+        - alert: BackendLatencyBudgetLow
+          expr: slo:latency:error_budget_remaining_ratio < 0.1
+          for: 10m
+          labels:
+            severity: warning
+            slo: latency
+          annotations:
+            summary: "Backend latency error budget nearly exhausted"
+            description: "Less than 10 percent of the 30d latency error budget remains."
