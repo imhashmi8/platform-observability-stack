@@ -1,0 +1,51 @@
+# Phase 9 (bonus): the LitmusChaos pod-delete experiment definition.
+# This is the standard experiment from the Litmus ChaosHub, vendored here so the
+# repo is self contained and you do not have to pull it from the hub at run time.
+# It needs the Litmus chaos operator and CRDs installed first (see docs/PHASE9.md).
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosExperiment
+metadata:
+  name: pod-delete
+  namespace: sample-app
+  labels:
+    name: pod-delete
+    app.kubernetes.io/part-of: litmus
+spec:
+  definition:
+    scope: Namespaced
+    permissions:
+      - apiGroups: [""]
+        resources: ["pods", "pods/log", "pods/exec", "events", "configmaps"]
+        verbs: ["create", "delete", "get", "list", "patch", "update", "deletecollection"]
+      - apiGroups: ["batch"]
+        resources: ["jobs"]
+        verbs: ["create", "list", "get", "delete", "deletecollection"]
+      - apiGroups: ["apps"]
+        resources: ["deployments", "replicasets"]
+        verbs: ["list", "get"]
+      - apiGroups: ["litmuschaos.io"]
+        resources: ["chaosengines", "chaosexperiments", "chaosresults"]
+        verbs: ["create", "list", "get", "patch", "update", "delete"]
+    image: "litmuschaos/go-runner:3.0.0"
+    imagePullPolicy: Always
+    args:
+      - -c
+      - ./experiments -name pod-delete
+    command:
+      - /bin/bash
+    env:
+      # How long the experiment runs, and how often it kills pods in that window.
+      - name: TOTAL_CHAOS_DURATION
+        value: "30"
+      - name: CHAOS_INTERVAL
+        value: "10"
+      # Delete immediately rather than waiting for graceful termination.
+      - name: FORCE
+        value: "true"
+      - name: PODS_AFFECTED_PERC
+        value: ""
+      - name: SEQUENCE
+        value: parallel
+    labels:
+      name: pod-delete
+      app.kubernetes.io/part-of: litmus

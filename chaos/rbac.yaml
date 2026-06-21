@@ -1,0 +1,50 @@
+# Phase 9 (bonus): RBAC for the LitmusChaos pod-delete experiment.
+# Namespaced scope: the experiment only ever touches the sample-app namespace,
+# so it gets a Role (not a ClusterRole) bound to a dedicated ServiceAccount.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: litmus-pod-delete
+  namespace: sample-app
+  labels:
+    app.kubernetes.io/part-of: litmus
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: litmus-pod-delete
+  namespace: sample-app
+  labels:
+    app.kubernetes.io/part-of: litmus
+rules:
+  # Drive the experiment: create the helper pod, delete the target pods, read logs.
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/exec", "events", "configmaps"]
+    verbs: ["create", "delete", "get", "list", "patch", "update", "deletecollection"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "list", "get", "delete", "deletecollection"]
+  # Discover the target workload behind the app label.
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["list", "get"]
+  # The Litmus CRDs the experiment reads and writes.
+  - apiGroups: ["litmuschaos.io"]
+    resources: ["chaosengines", "chaosexperiments", "chaosresults"]
+    verbs: ["create", "list", "get", "patch", "update", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: litmus-pod-delete
+  namespace: sample-app
+  labels:
+    app.kubernetes.io/part-of: litmus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: litmus-pod-delete
+subjects:
+  - kind: ServiceAccount
+    name: litmus-pod-delete
+    namespace: sample-app

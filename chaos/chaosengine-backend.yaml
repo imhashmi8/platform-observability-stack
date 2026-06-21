@@ -1,0 +1,37 @@
+# Phase 9 (bonus): run the pod-delete experiment against the backend.
+# Applying this ChaosEngine triggers a run immediately, so it is kept OUT of
+# GitOps auto-sync (it is not under argocd/apps/). Apply it by hand when you want
+# to inject chaos, then watch the backend recover and the SLO dashboard react.
+#
+# The backend Deployment runs 2+ replicas behind a Service, so killing 50 percent
+# of pods should be absorbed with little or no user impact: that is the point of
+# the test. Watch the Phase 6 SLO dashboard and the Phase 8 burn rate alerts to
+# confirm the blast radius stays inside the error budget.
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: backend-pod-delete
+  namespace: sample-app
+spec:
+  # Which workload to target: the backend Deployment, found by its app label.
+  appinfo:
+    appns: sample-app
+    applabel: "app.kubernetes.io/name=backend"
+    appkind: deployment
+  engineState: active
+  chaosServiceAccount: litmus-pod-delete
+  # We do not annotate the app, so skip the opt-in annotation check.
+  annotationCheck: "false"
+  experiments:
+    - name: pod-delete
+      spec:
+        components:
+          env:
+            - name: TOTAL_CHAOS_DURATION
+              value: "60"
+            - name: CHAOS_INTERVAL
+              value: "10"
+            - name: FORCE
+              value: "true"
+            - name: PODS_AFFECTED_PERC
+              value: "50"
