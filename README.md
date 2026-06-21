@@ -32,9 +32,9 @@ engineering, built around a real sample application.
 | 4 | Logging: Loki + Promtail | ✅ done | `loki/`, `grafana/datasources/` see [docs/PHASE4.md](docs/PHASE4.md) |
 | 5 | Distributed tracing: Tempo + OpenTelemetry Collector | ✅ done | `tempo/`, `otel/` see [docs/PHASE5.md](docs/PHASE5.md) |
 | 6 | SLI / SLO dashboards | ✅ done | `slo/`, `grafana/dashboards/` see [docs/PHASE6.md](docs/PHASE6.md) |
-| 7 | Error budgets | ⬜ todo | `slo/` |
-| 8 | Burn-rate alerts: Alertmanager to Slack | ⬜ todo | `alerts/` |
-| 9 | Chaos engineering: LitmusChaos (bonus) | ⬜ todo | `chaos/` |
+| 7 | Error budgets | ✅ done | `slo/`, `grafana/dashboards/` see [docs/PHASE7.md](docs/PHASE7.md) |
+| 8 | Burn-rate alerts: Alertmanager to Slack | ✅ done | `alerts/`, `prometheus/` see [docs/PHASE8.md](docs/PHASE8.md) |
+| 9 | Chaos engineering: LitmusChaos (bonus) | ✅ done | `chaos/` see [docs/PHASE9.md](docs/PHASE9.md) |
 
 ## Screenshots
 
