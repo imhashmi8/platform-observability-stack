@@ -1,0 +1,62 @@
+# Phase 7: error budgets, built on the Phase 6 SLIs and SLO targets.
+#
+# An error budget is the amount of unreliability an SLO allows. At 99.9 percent
+# availability the budget is 0.1 percent of requests over the SLO window; at 95
+# percent latency it is 5 percent of requests slower than 500ms. These rules
+# record, over a rolling 30 day window:
+#
+#   slo:<sli>:error_budget                  the budget itself (1 - target)
+#   sli:<sli>:ratio_rate30d                 the SLI measured across the window
+#   slo:<sli>:error_budget_consumed_ratio   0 = none used, 1 = exhausted, >1 = breached
+#   slo:<sli>:error_budget_remaining_ratio  1 = full budget left, 0 = none left
+#
+# The 30 day rate windows need at least 30 days of samples retained, which is why
+# prometheus/values.yaml sets retention to 30d. The group evaluates every 5m
+# because a 30 day budget does not move fast and the long range queries are not
+# cheap to run every 30s.
+#
+# Prometheus discovers this PrometheusRule automatically (Phase 3 set
+# ruleSelectorNilUsesHelmValues to false).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: slo-backend-error-budget
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: slo_backend_error_budget
+      interval: 5m
+      rules:
+        # ---- Budgets: the unreliability each SLO permits ----
+        - record: slo:availability:error_budget
+          expr: 1 - slo:availability:target
+        - record: slo:latency:error_budget
+          expr: 1 - slo:latency:target
+
+        # ---- SLIs over the full 30 day SLO window ----
+        - record: sli:availability:ratio_rate30d
+          expr: |
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz",status!~"5.."}[30d]))
+            /
+            sum(rate(http_requests_total{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[30d]))
+        - record: sli:latency:ratio_rate30d
+          expr: |
+            sum(rate(http_request_duration_seconds_bucket{namespace="sample-app",path!~"/metrics|/healthz|/readyz",le="0.5"}[30d]))
+            /
+            sum(rate(http_request_duration_seconds_count{namespace="sample-app",path!~"/metrics|/healthz|/readyz"}[30d]))
+
+        # ---- Error budget consumed: how much of the budget the window has spent ----
+        # (1 - SLI) is the observed error rate; dividing by the budget gives the
+        # fraction of budget used. clamp_min keeps it at 0 when the SLI is perfect.
+        - record: slo:availability:error_budget_consumed_ratio
+          expr: clamp_min((1 - sli:availability:ratio_rate30d) / scalar(slo:availability:error_budget), 0)
+        - record: slo:latency:error_budget_consumed_ratio
+          expr: clamp_min((1 - sli:latency:ratio_rate30d) / scalar(slo:latency:error_budget), 0)
+
+        # ---- Error budget remaining: 1 means untouched, 0 means spent ----
+        - record: slo:availability:error_budget_remaining_ratio
+          expr: 1 - slo:availability:error_budget_consumed_ratio
+        - record: slo:latency:error_budget_remaining_ratio
+          expr: 1 - slo:latency:error_budget_consumed_ratio

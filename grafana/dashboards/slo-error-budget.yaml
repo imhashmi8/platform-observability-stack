@@ -1,0 +1,164 @@
+# Phase 7 error budget dashboard, delivered as a ConfigMap and imported by the
+# Grafana sidecar (grafana_dashboard label) exactly like the Phase 6 SLO board.
+# Every panel reads the recording rules from slo/error-budget-rules.yaml, so the
+# numbers here match the burn rate alerts in Phase 8.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: slo-backend-error-budget-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  slo-backend-error-budget.json: |
+    {
+      "title": "Backend Error Budget",
+      "uid": "backend-error-budget",
+      "schemaVersion": 39,
+      "editable": true,
+      "time": {"from": "now-30d", "to": "now"},
+      "templating": {
+        "list": [
+          {
+            "name": "datasource",
+            "type": "datasource",
+            "query": "prometheus",
+            "hide": 0,
+            "current": {}
+          }
+        ]
+      },
+      "panels": [
+        {
+          "type": "gauge",
+          "title": "Availability budget remaining (30d)",
+          "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "min": 0,
+              "max": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 0.25},
+                  {"color": "green", "value": 0.5}
+                ]
+              }
+            }
+          },
+          "targets": [
+            {"expr": "clamp_min(slo:availability:error_budget_remaining_ratio, 0)", "refId": "A"}
+          ]
+        },
+        {
+          "type": "gauge",
+          "title": "Latency budget remaining (30d)",
+          "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "min": 0,
+              "max": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 0.25},
+                  {"color": "green", "value": 0.5}
+                ]
+              }
+            }
+          },
+          "targets": [
+            {"expr": "clamp_min(slo:latency:error_budget_remaining_ratio, 0)", "refId": "A"}
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Availability budget consumed (30d)",
+          "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 0.5},
+                  {"color": "red", "value": 1}
+                ]
+              }
+            }
+          },
+          "targets": [
+            {"expr": "slo:availability:error_budget_consumed_ratio", "refId": "A"}
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Latency budget consumed (30d)",
+          "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 0.5},
+                  {"color": "red", "value": 1}
+                ]
+              }
+            }
+          },
+          "targets": [
+            {"expr": "slo:latency:error_budget_consumed_ratio", "refId": "A"}
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Error budget remaining over time",
+          "gridPos": {"h": 9, "w": 12, "x": 0, "y": 8},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "min": 0,
+              "max": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "green", "value": 0.25}
+                ]
+              }
+            }
+          },
+          "targets": [
+            {"expr": "clamp_min(slo:availability:error_budget_remaining_ratio, 0)", "refId": "A", "legendFormat": "availability"},
+            {"expr": "clamp_min(slo:latency:error_budget_remaining_ratio, 0)", "refId": "B", "legendFormat": "latency"}
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "30d SLI vs target",
+          "gridPos": {"h": 9, "w": 12, "x": 12, "y": 8},
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1}},
+          "targets": [
+            {"expr": "sli:availability:ratio_rate30d", "refId": "A", "legendFormat": "availability SLI"},
+            {"expr": "slo:availability:target", "refId": "B", "legendFormat": "availability target"},
+            {"expr": "sli:latency:ratio_rate30d", "refId": "C", "legendFormat": "latency SLI"},
+            {"expr": "slo:latency:target", "refId": "D", "legendFormat": "latency target"}
+          ]
+        }
+      ]
+    }
